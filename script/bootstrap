@@ -1,0 +1,47 @@
+#!/bin/sh
+
+srcdir=`dirname ${0}`
+abs_srcdir=`pwd`
+abs_top_srcdir="${abs_srcdir}"
+
+install_packages_apt()
+{
+    # apt update and install dependencies
+    sudo apt-get update
+    sudo apt-get install automake g++ libtool make
+
+    # add gcc-arm-embbedded
+
+    # add clang-format for pretty
+    sudo apt-get install clang-format-5.0
+}
+
+install_packages_brew()
+{
+    # add autotools
+    brew install automake libtool
+
+    # check for gcc for posix examples
+    if ! which gcc; then
+        echo 'warning: clang/gcc needed for posix examples'
+        echo 'warning: please install Command Line Tools from https://developer.apple.com/download/more/'
+    fi
+}
+
+install_packages()
+{
+    PM=source
+    if which apt-get; then
+        PM=apt
+    elif which brew; then
+        PM=brew
+    fi
+    install_packages_$PM
+}
+
+main()
+{
+    install_packages
+}
+
+main

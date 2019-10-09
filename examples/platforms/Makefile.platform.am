@@ -1,0 +1,9 @@
+CPPFLAGS_COMMON     = $(NULL)
+LDADD_COMMON        = $(NULL)
+LDFLAGS_COMMON      = $(NULL)
+SOURCES_COMMON      = $(NULL)
+LIBTOOLFLAGS_COMMON = --preserve-dup-deps
+
+if OPENVC_EXAMPLES_POSIX
+include $(top_srcdir)/examples/platforms/posix/Makefile.platform.am
+endif
