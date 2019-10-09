@@ -255,12 +255,31 @@ AM_CONDITIONAL([OPENVC_BUILD_DEBUG], [test "${nl_cv_build_debug}" = "yes"])
 
 # Coverage
 
+AC_ARG_ENABLE(build-coverage,
+    [AS_HELP_STRING([--enable-build-coverage],[Enable build coverage @<:@default=no@:>@.])],
+    [
+        case "${enableval}" in
+
+        no|yes)
+            enable_build_coverage=${enableval}
+            ;;
+
+        *)
+            AC_MSG_ERROR([Invalid value ${enable_build_coverage} for --enable-build-coverage])
+            ;;
+        esac
+    ],
+    [enable_build_coverage=no])
+
+if test ! "${OPENVC_TARGET}" = "darwin" -a "${enable_build_coverage}" = "yes"; then
+NL_ENABLE_COVERAGE([yes])
+NL_ENABLE_COVERAGE_REPORTS([yes])
+else
 NL_ENABLE_COVERAGE([no])
+NL_ENABLE_COVERAGE_REPORTS([no])
+fi
 
 AM_CONDITIONAL([OPENVC_BUILD_COVERAGE], [test "${nl_cv_build_coverage}" = "yes"])
-
-NL_ENABLE_COVERAGE_REPORTS([auto])
-
 AM_CONDITIONAL([OPENVC_BUILD_COVERAGE_REPORTS], [test "${nl_cv_build_coverage_reports}" = "yes"])
 
 # Optimization

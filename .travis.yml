@@ -19,6 +19,9 @@ after_success:
 
 matrix:
   include:
+    - env: BUILD_TARGET="posix-32-bit" VERBOSE=1 VIRTUAL_TIME=1
+      os: linux
+      compiler: gcc
     - env: BUILD_TARGET="pretty-check"
       os: linux
       addons:

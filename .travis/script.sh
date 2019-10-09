@@ -36,3 +36,14 @@ set -x
     ./bootstrap || die
     CPPFLAGS=-DCONFIG_LOG_LEVEL=LOG_LEVEL_DEBG make -f examples/Makefile-posix || die
 }
+
+[ $BUILD_TARGET != posix-32-bit ] || {
+    ./bootstrap || die
+
+    ./configure                         \
+        --enable-cli-app=all            \
+        --with-examples=posix           \
+        --enable-build-coverage=yes || die
+
+    COVERAGE=1 CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 make check || die
+}
