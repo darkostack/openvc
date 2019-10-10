@@ -8,7 +8,7 @@ die() {
 set -x
 
 [ $BUILD_TARGET != pretty-check ] || {
-    ./bootstrap || die
+    ./bootstrap -v || die
     ./configure || die
     make pretty-check || die
 }
