@@ -144,7 +144,7 @@ void vcPlatAlarmMicroStartAt(vcInstance *aInstance, uint32_t aT0, uint32_t aDt)
 #if __linux__
     {
         struct itimerspec its;
-        uint32_t          diff = sUsAlarm - otPlatAlarmMicroGetNow();
+        uint32_t          diff = sUsAlarm - vcPlatAlarmMicroGetNow();
 
         its.it_value.tv_sec  = diff / US_PER_S;
         its.it_value.tv_nsec = (diff % US_PER_S) * NS_PER_US;
@@ -154,7 +154,7 @@ void vcPlatAlarmMicroStartAt(vcInstance *aInstance, uint32_t aT0, uint32_t aDt)
 
         if (-1 == timer_settime(sMicroTimer, 0, &its, NULL))
         {
-            perror("otPlatAlarmMicroStartAt timer_settime()");
+            perror("vcPlatAlarmMicroStartAt timer_settime()");
             exit(EXIT_FAILURE);
         }
     }
