@@ -415,8 +415,6 @@ AC_ARG_ENABLE(cli-app,
         case "${enableval}" in
         no|yes)
             enable_cli_app=${enableval}
-            enable_cli_app_mtd=${enableval}
-            enable_cli_app_ftd=${enableval}
             ;;
         *)
             AC_MSG_ERROR([Invalid value ${enableval} for --enable-cli-app])
@@ -427,7 +425,7 @@ AC_ARG_ENABLE(cli-app,
 
 AC_MSG_CHECKING([cli-app modes])
 AC_MSG_RESULT(${enable_cli_app})
-AM_CONDITIONAL([OPENVC_ENABLE_CLI], [test "${enable_cli_app}" == "yes" -o "${OPENVC_ENABLE_POSIX_APP_CLI}" == "1"])
+AM_CONDITIONAL([OPENVC_ENABLE_CLI], [test "${enable_cli_app}" == "yes"])
 AC_SUBST(OPENVC_ENABLE_CLI)
 
 #
