@@ -29,12 +29,12 @@ set -x
     git checkout -- . || die
     git clean -xfd || die
     ./bootstrap || die
-    CPPFLAGS=-DCONFIG_LOG_LEVEL=LOG_LEVEL_NONE make -f examples/Makefile-posix || die
+    CPPFLAGS=-DCONFIG_LOG_LEVEL=LOG_LEVEL_NONE make -f examples/Makefile-posix check || die
 
     git checkout -- . || die
     git clean -xfd || die
     ./bootstrap || die
-    CPPFLAGS=-DCONFIG_LOG_LEVEL=LOG_LEVEL_DEBG make -f examples/Makefile-posix || die
+    CPPFLAGS=-DCONFIG_LOG_LEVEL=LOG_LEVEL_DEBG make -f examples/Makefile-posix check || die
 }
 
 [ $BUILD_TARGET != posix-32-bit ] || {
