@@ -4,14 +4,16 @@
 
 #include "common/code_utils.hpp"
 #include "common/instance.hpp"
-#include "common/logging.hpp"
+#include "common/locator-getters.hpp"
+
+using namespace vc;
 
 void vcTaskletsProcess(vcInstance *aInstance)
 {
-    vc::Instance &instance = *static_cast<vc::Instance *>(aInstance);
+    Instance &instance = *static_cast<Instance *>(aInstance);
 
     VerifyOrExit(vcInstanceIsInitialized(aInstance));
-    instance.GetTaskletScheduler().ProcessQueuedTasklets();
+    instance.Get<TaskletScheduler>().ProcessQueuedTasklets();
 
 exit:
     return;
@@ -20,10 +22,10 @@ exit:
 bool vcTaskletsArePending(vcInstance *aInstance)
 {
     bool retval = false;
-    vc::Instance &instance = *static_cast<vc::Instance *>(aInstance);
+    Instance &instance = *static_cast<Instance *>(aInstance);
 
     VerifyOrExit(vcInstanceIsInitialized(aInstance));
-    retval = instance.GetTaskletScheduler().AreTaskletsPending();
+    retval = instance.Get<TaskletScheduler>().AreTaskletsPending();
 
 exit:
     return retval;

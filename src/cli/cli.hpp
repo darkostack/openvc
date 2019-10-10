@@ -3,11 +3,11 @@
 
 #include "openvc-core-config.h"
 
+#include "cli_config.h"
+
 #include <stdarg.h>
 
 #include <openvc/cli.h>
-
-#include "cli/cli_server.hpp"
 
 #include "common/code_utils.hpp"
 #include "common/instance.hpp"
@@ -16,6 +16,7 @@ namespace vc {
 namespace Cli {
 
 class Interpreter;
+class Server;
 
 struct Command
 {
@@ -26,7 +27,7 @@ struct Command
 class Interpreter
 {
 public:
-    Interpreter(Instance *aInstance);
+    explicit Interpreter(Instance *aInstance);
 
     void ProcessLine(char *aBuf, uint16_t aBufLength, Server &aServer);
 
@@ -45,7 +46,8 @@ public:
 private:
     enum
     {
-        kMaxArgs = 32,
+        kMaxArgs          = 32,
+        kMaxAutoAddresses = 8,
     };
 
     void ProcessHelp(int argc, char *argv[]);
@@ -56,8 +58,7 @@ private:
     static const struct Command sCommands[];
     const vcCliCommand *        mUserCommands;
     uint8_t                     mUserCommandsLength;
-
-    Server *mServer;
+    Server *                    mServer;
 
     Instance *mInstance;
 };

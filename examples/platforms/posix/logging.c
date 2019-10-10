@@ -27,6 +27,9 @@
 #if (OPENVC_CONFIG_LOG_OUTPUT == OPENVC_CONFIG_LOG_OUTPUT_PLATFORM_DEFINED)
 VC_TOOL_WEAK void vcPlatLog(vcLogLevel aLogLevel, vcLogRegion aLogRegion, const char *aFormat, ...)
 {
+    VC_UNUSED_VARIABLE(aLogLevel);
+    VC_UNUSED_VARIABLE(aLogRegion);
+
     char         logString[512];
     unsigned int offset;
     int          charsWritten;
@@ -34,7 +37,7 @@ VC_TOOL_WEAK void vcPlatLog(vcLogLevel aLogLevel, vcLogRegion aLogRegion, const 
 
     offset = 0;
 
-    LOG_PRINTF("[%d] ", NODE_ID);
+    LOG_PRINTF("[%d] ", gNodeId);
 
     va_start(args, aFormat);
     charsWritten = vsnprintf(&logString[offset], sizeof(logString) - offset, aFormat, args);
@@ -44,9 +47,6 @@ VC_TOOL_WEAK void vcPlatLog(vcLogLevel aLogLevel, vcLogRegion aLogRegion, const 
 
 exit:
     syslog(LOG_CRIT, "%s", logString);
-
-    VC_UNUSED_VARIABLE(aLogLevel);
-    VC_UNUSED_VARIABLE(aLogRegion);
 }
 
 #endif // #if (OPENVC_CONFIG_LOG_OUTPUT == OPENVC_CONFIG_LOG_OUTPUT_PLATFORM_DEFINED)

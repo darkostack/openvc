@@ -3,7 +3,7 @@
 
 #include "openvc-core-config.h"
 
-#include "utils/wrap_stdint.h"
+#include <stdint.h>
 
 #include <openvc/platform/random.h>
 

@@ -4,8 +4,9 @@
 #include "openvc-core-config.h"
 
 #include <stddef.h>
+#include <stdint.h>
 
-#include "utils/wrap_stdint.h"
+#include "utils/static_assert.hpp"
 
 namespace vc {
 namespace Utils {
@@ -101,7 +102,11 @@ public:
 private:
     enum
     {
-        kMemorySize         = OPENVC_CONFIG_HEAP_SIZE,
+#if OPENVC_CONFIG_DTLS_ENABLE
+        kMemorySize = OPENVC_CONFIG_HEAP_INTERNAL_SIZE,
+#else
+        kMemorySize = OPENVC_CONFIG_HEAP_INTERNAL_SIZE_NO_DTLS,
+#endif
         kAlignSize          = sizeof(long),
         kBlockRemainderSize = kAlignSize - sizeof(uint16_t) * 2,
         kSuperBlockSize     = kAlignSize - sizeof(Block),
@@ -110,6 +115,8 @@ private:
         kFirstBlockOffset   = kAlignSize * 2 - sizeof(uint16_t),
         kGuardBlockOffset   = kMemorySize - sizeof(uint16_t),
     };
+
+    VC_STATIC_ASSERT(kMemorySize % kAlignSize == 0, "The heap memory size is not aligned to kAlignSize!");
 
     Block &BlockAt(uint16_t aOffset) { return *reinterpret_cast<Block *>(&mMemory.m16[aOffset / 2]); }
 

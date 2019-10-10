@@ -3,8 +3,8 @@
 
 #include "openvc-core-config.h"
 
-#include "utils/wrap_stdbool.h"
-#include "utils/wrap_stdint.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 #include <openvc/error.h>
 #include <openvc/platform/logging.h>
@@ -24,32 +24,22 @@ namespace vc {
 class Instance : public vcInstance
 {
 public:
+#if OPENVC_CONFIG_MULTIPLE_INSTANCES_ENABLE
+    static Instance *Init(void *aBuffer, size_t *aBufferSize);
+#else
     static Instance &InitSingle(void);
 
     static Instance &Get(void);
+#endif
 
     bool IsInitialized(void) const { return mIsInitialized; }
 
     void Reset(void);
 
-    TimerMilliScheduler &GetTimerMilliScheduler(void) { return mTimerMilliScheduler; }
-
-#if OPENVC_CONFIG_ENABLE_PLATFORM_USEC_TIMER
-    TimerMicroScheduler &GetTimerMicroScheduler(void) { return mTimerMicroScheduler; }
-#endif
-
-    TaskletScheduler &GetTaskletScheduler(void) { return mTaskletScheduler; }
-
-#if OPENVC_CONFIG_ENABLE_DYNAMIC_LOG_LEVEL
-    vcLogLevel GetDynamicLogLevel(void) const { return mLogLevel; }
-
-    void SetDynamicLogLevel(vcLogLevel aLogLevel) { mLogLevel = aLogLevel; }
-#endif
-
     vcLogLevel GetLogLevel(void) const
-#if OPENVC_CONFIG_ENABLE_DYNAMIC_LOG_LEVEL
+#if OPENVC_CONFIG_DYNAMIC_LOG_LEVEL_ENABLE
     {
-        return GetDynamicLogLevel();
+        return mLogLevel;
     }
 #else
     {
@@ -57,9 +47,17 @@ public:
     }
 #endif
 
+#if OPENVC_CONFIG_DYNAMIC_LOG_LEVEL_ENABLE
+    void SetLogLevel(vcLogLevel aLogLevel) { mLogLevel = aLogLevel; }
+#endif
+
     void Finalize(void);
 
-#if !OPENVC_ENABLE_MULTIPLE_INSTANCES
+#if !OPENVC_CONFIG_MULTIPLE_INSTANCES_ENABLE
+    void HeapFree(void *aPointer) { mHeap.Free(aPointer); }
+
+    void *HeapCAlloc(size_t aCount, size_t aSize) { return mHeap.CAlloc(aCount, aSize); }
+
     Utils::Heap &GetHeap(void) { return mHeap; }
 #endif
 
@@ -69,16 +67,18 @@ private:
     Instance(void);
     void AfterInit(void);
 
+    TaskletScheduler    mTaskletScheduler;
     TimerMilliScheduler mTimerMilliScheduler;
-#if OPENVC_CONFIG_ENABLE_PLATFORM_USEC_TIMER
+#if OPENVC_CONFIG_PLATFORM_USEC_TIMER_ENABLE
     TimerMicroScheduler mTimerMicroScheduler;
 #endif
-    TaskletScheduler mTaskletScheduler;
 
+#if !OPENVC_CONFIG_MULTIPLE_INSTANCES_ENABLE
+    Utils::Heap mHeap;
+#endif
     Crypto::MbedTls mMbedTls;
-    Utils::Heap     mHeap;
 
-#if OPENVC_CONFIG_ENABLE_DYNAMIC_LOG_LEVEL
+#if OPENVC_CONFIG_DYNAMIC_LOG_LEVEL_ENABLE
     vcLogLevel mLogLevel;
 #endif
 
@@ -89,8 +89,20 @@ private:
 
 template <> inline TaskletScheduler &Instance::Get(void)
 {
-    return GetTaskletScheduler();
+    return mTaskletScheduler;
 }
+
+template <> inline TimerMilliScheduler &Instance::Get(void)
+{
+    return mTimerMilliScheduler;
+}
+
+#if OPENVC_CONFIG_PLATFORM_USEC_TIMER_ENABLE
+template <> inline TimerMicroScheduler &Instance::Get(void)
+{
+    return mTimerMicroScheduler;
+}
+#endif
 
 } // namespace vc
 

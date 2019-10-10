@@ -13,19 +13,16 @@
 #include <openvc/tasklet.h>
 #include <openvc/platform/alarm-milli.h>
 
-uint32_t NODE_ID           = 1;
-uint32_t WELLKNOWN_NODE_ID = 34;
+uint32_t gNodeId = 1;
 
 extern bool gPlatformPseudoResetWasRequested;
 
 static volatile bool gTerminate = false;
 
-int    gArgumentsCount = 0;
-char **gArguments      = NULL;
-
 static void handleSignal(int aSignal)
 {
-    (void)aSignal;
+    VC_UNUSED_VARIABLE(aSignal);
+
     gTerminate = true;
 }
 
@@ -49,15 +46,12 @@ void vcSysInit(int aArgCount, char *aArgVector[])
     openlog(basename(aArgVector[0]), LOG_PID, LOG_USER);
     setlogmask(setlogmask(0) & LOG_UPTO(LOG_NOTICE));
 
-    gArgumentsCount = aArgCount;
-    gArguments      = aArgVector;
-
     signal(SIGTERM, &handleSignal);
     signal(SIGHUP, &handleSignal);
 
-    NODE_ID = (uint32_t)strtol(aArgVector[1], &endptr, 0);
+    gNodeId = (uint32_t)strtol(aArgVector[1], &endptr, 0);
 
-    if (*endptr != '\0' || NODE_ID < 1 || NODE_ID >= WELLKNOWN_NODE_ID)
+    if (*endptr != '\0' || gNodeId < 1 || gNodeId >= WELLKNOWN_NODE_ID)
     {
         fprintf(stderr, "Invalid NodeId: %s\n", aArgVector[1]);
         exit(EXIT_FAILURE);
@@ -103,22 +97,28 @@ void vcSysProcessDrivers(vcInstance *aInstance)
     platformUartUpdateFdSet(&read_fds, &write_fds, &error_fds, &max_fd);
     platformAlarmUpdateTimeout(&timeout);
 
-    if (!vcTaskletsArePending(aInstance))
+    if (vcTaskletsArePending(aInstance))
     {
-        rval = select(max_fd + 1, &read_fds, &write_fds, &error_fds, &timeout);
-
-        if ((rval < 0) && (errno != EINTR))
-        {
-            perror("select");
-            exit(EXIT_FAILURE);
-        }
+        timeout.tv_sec  = 0;
+        timeout.tv_usec = 0;
     }
+
+    rval = select(max_fd + 1, &read_fds, &write_fds, &error_fds, &timeout);
+
+    if (rval >= 0)
+    {
+        platformUartProcess();
+    }
+    else if (errno != EINTR)
+    {
+        perror("select");
+        exit(EXIT_FAILURE);
+    }
+
+    platformAlarmProcess(aInstance);
 
     if (gTerminate)
     {
         exit(0);
     }
-
-    platformUartProcess();
-    platformAlarmProcess(aInstance);
 }

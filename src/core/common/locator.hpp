@@ -5,26 +5,67 @@
 
 #include <openvc/platform/toolchain.h>
 
+#include <stdint.h>
+
 namespace vc {
 
 class Instance;
 
+#if !OPENVC_CONFIG_MULTIPLE_INSTANCES_ENABLE
+extern uint64_t gInstanceRaw[];
+#endif
+
 class InstanceLocator
 {
 public:
-    Instance &GetInstance(void) const;
+#if OPENVC_CONFIG_MULTIPLE_INSTANCES_ENABLE
+    Instance &GetInstance(void) const { return mInstance; }
+#else
+    Instance &GetInstance(void) const { return *reinterpret_cast<Instance *>(&gInstanceRaw); }
+#endif
+
+    template <typename Type> inline Type &Get(void) const;
 
 protected:
-    InstanceLocator(Instance &aInstance) { VC_UNUSED_VARIABLE(aInstance); }
+    explicit InstanceLocator(Instance &aInstance)
+#if OPENVC_CONFIG_MULTIPLE_INSTANCES_ENABLE
+        : mInstance(aInstance)
+#endif
+    {
+        VC_UNUSED_VARIABLE(aInstance);
+    }
+
+#if OPENVC_CONFIG_MULTIPLE_INSTANCES_ENABLE
+private:
+    Instance &mInstance;
+#endif
 };
 
 class OwnerLocator
 {
 public:
-    template <typename OwnerType> OwnerType &GetOwner(void);
+    template <typename OwnerType> OwnerType &GetOwner(void)
+#if OPENVC_CONFIG_MULTIPLE_INSTANCES_ENABLE
+    {
+        return *static_cast<OwnerType *>(mOwner);
+    }
+#else
+    ;
+#endif
 
 protected:
-    OwnerLocator(void *aOwner) { VC_UNUSED_VARIABLE(aOwner); }
+    explicit OwnerLocator(void *aOwner)
+#if OPENVC_CONFIG_MULTIPLE_INSTANCES_ENABLE
+        : mOwner(aOwner)
+#endif
+    {
+        VC_UNUSED_VARIABLE(aOwner);
+    }
+
+#if OPENVC_CONFIG_MULTIPLE_INSTANCES_ENABLE
+private:
+    void *mOwner;
+#endif
 };
 
 } // namespace vc

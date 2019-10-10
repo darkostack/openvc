@@ -15,6 +15,8 @@ vcError vcPlatUartDisable(void);
 
 vcError vcPlatUartSend(const uint8_t *aBuf, uint16_t aBufLength);
 
+vcError vcPlatUartFlush(void);
+
 extern void vcPlatUartSendDone(void);
 
 extern void vcPlatUartReceived(const uint8_t *aBuf, uint16_t aBufLength);

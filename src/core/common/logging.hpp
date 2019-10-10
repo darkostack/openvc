@@ -240,7 +240,7 @@ const char *vcLogLevelToPrefixString(vcLogLevel aLogLevel);
 #define _vcLogFormatter(aInstance, aLogLevel, aRegion, aFormat, ...) \
     _vcDynamicLog(aInstance, aLogLevel, aRegion, aFormat OPENVC_CONFIG_LOG_SUFFIX, ##__VA_ARGS__)
 
-#if OPENVC_CONFIG_ENABLE_DYNAMIC_LOG_LEVEL == 1
+#if OPENVC_CONFIG_DYNAMIC_LOG_LEVEL_ENABLE == 1
 
 #define _vcDynamicLog(aInstance, aLogLevel, aRegion, aFormat, ...)  \
     do                                                              \
@@ -249,12 +249,12 @@ const char *vcLogLevelToPrefixString(vcLogLevel aLogLevel);
             _vcPlatLog(aLogLevel, aRegion, aFormat, ##__VA_ARGS__); \
     } while (false)
 
-#else // OPENVC_CONFIG_ENABLE_DYNAMIC_LOG_LEVEL
+#else // OPENVC_CONFIG_DYNAMIC_LOG_LEVEL_ENABLE
 
 #define _vcDynamicLog(aInstance, aLogLevel, aRegion, aFormat, ...) \
     _vcPlatLog(aLogLevel, aRegion, aFormat, ##__VA_ARGS__)
 
-#endif // OPENVC_CONFIG_ENABLE_DYNAMIC_LOG_LEVEL
+#endif // OPENVC_CONFIG_DYNAMIC_LOG_LEVEL_ENABLE
 
 #define _vcPlatLog(aLogLevel, aRegion, aFormat, ...) \
     OPENVC_CONFIG_PLAT_LOG_FUNCTION(aLogLevel, aRegion, aFormat, ##__VA_ARGS__)

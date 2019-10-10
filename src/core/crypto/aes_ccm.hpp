@@ -3,7 +3,7 @@
 
 #include "openvc-core-config.h"
 
-#include "utils/wrap_stdint.h"
+#include <stdint.h>
 
 #include <openvc/error.h>
 
@@ -15,7 +15,7 @@ namespace Crypto {
 class AesCcm
 {
 public:
-    vcError SetKey(const uint8_t *aKey, uint16_t aKeyLength);
+    void SetKey(const uint8_t *aKey, uint16_t aKeyLength);
 
     vcError Init(uint32_t    aHeaderLength,
                  uint32_t    aPlainTextLength,

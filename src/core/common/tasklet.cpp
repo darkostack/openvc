@@ -3,6 +3,7 @@
 #include "common/code_utils.hpp"
 #include "common/debug.hpp"
 #include "common/instance.hpp"
+#include "common/locator-getters.hpp"
 
 namespace vc {
 
@@ -16,7 +17,7 @@ Tasklet::Tasklet(Instance &aInstance, Handler aHandler, void *aOwner)
 
 vcError Tasklet::Post(void)
 {
-    return GetInstance().GetTaskletScheduler().Post(*this);
+    return Get<TaskletScheduler>().Post(*this);
 }
 
 TaskletScheduler::TaskletScheduler(void)
@@ -31,7 +32,7 @@ vcError TaskletScheduler::Post(Tasklet &aTasklet)
 
     VerifyOrExit(mTail != &aTasklet && aTasklet.mNext == NULL, error = VC_ERROR_ALREADY);
 
-    VerifyOrExit(&aTasklet.GetInstance().Get<TaskletScheduler>() == this);
+    VerifyOrExit(&aTasklet.Get<TaskletScheduler>() == this);
 
     if (mTail == NULL)
     {

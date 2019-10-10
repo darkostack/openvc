@@ -37,6 +37,7 @@ endif # OPENVC_ENABLE_BUILTIN_MBEDTLS
 check_PROGRAMS                                                      = \
     test-heap                                                         \
     test-aes                                                          \
+    test-timer                                                        \
     $(NULL)
 
 # Test applications and scripts that should be built and run when the
@@ -54,9 +55,13 @@ test_heap_SOURCES           = test_platform.cpp test_heap.cpp
 test_aes_LDADD              = $(COMMON_LDADD)
 test_aes_SOURCES            = test_platform.cpp test_aes.cpp
 
+test_timer_LDADD            = $(COMMON_LDADD)
+test_timer_SOURCES          = test_platform.cpp test_timer.cpp
+
 PRETTY_FILES                                                        = \
     $(test_heap_SOURCES)                                              \
     $(test_aes_SOURCES)                                               \
+    $(test_timer_SOURCES)                                             \
     $(NULL)
 
 if OPENVC_BUILD_COVERAGE

@@ -17,13 +17,13 @@ SOURCE_COMMON                       = \
     api/instance_api.cpp              \
     api/tasklet_api.cpp               \
     common/instance.cpp               \
-    common/locator.cpp                \
     common/logging.cpp                \
     common/string.cpp                 \
     common/tasklet.cpp                \
     common/timer.cpp                  \
     crypto/aes_ccm.cpp                \
     crypto/aes_ecb.cpp                \
+    crypto/ecdsa.cpp                  \
     crypto/hmac_sha256.cpp            \
     crypto/mbedtls.cpp                \
     crypto/sha256.cpp                 \
@@ -31,6 +31,7 @@ SOURCE_COMMON                       = \
     utils/missing_strlcat.c           \
     utils/missing_strlcpy.c           \
     utils/missing_strnlen.c           \
+    utils/parse_cmdline.cpp           \
     $(NULL)
 
 libopenvc_core_a_SOURCES            = \
@@ -39,27 +40,28 @@ libopenvc_core_a_SOURCES            = \
 
 HEADERS_COMMON                      = \
     openvc-core-config.h              \
-    openvc-core-default-config.h      \
     common/code_utils.hpp             \
     common/debug.hpp                  \
     common/encoding.hpp               \
     common/instance.hpp               \
+    common/locator-getters.hpp        \
     common/locator.hpp                \
     common/logging.hpp                \
     common/new.hpp                    \
-    common/owner-locator.hpp          \
     common/random.hpp                 \
     common/string.hpp                 \
     common/tasklet.hpp                \
+    common/time.hpp                   \
     common/timer.hpp                  \
     crypto/aes_ccm.hpp                \
     crypto/aes_ecb.hpp                \
+    crypto/ecdsa.hpp                  \
     crypto/hmac_sha256.hpp            \
     crypto/mbedtls.hpp                \
     crypto/sha256.hpp                 \
     utils/heap.hpp                    \
-    utils/wrap_stdbool.h              \
-    utils/wrap_stdint.h               \
+    utils/parse_cmdline.hpp           \
+    utils/static_assert.hpp           \
     utils/wrap_string.h               \
     $(NULL)
 

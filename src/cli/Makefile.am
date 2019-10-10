@@ -23,6 +23,7 @@ libopenvc_cli_a_CPPFLAGS                = \
 
 SOURCES_COMMON                          = \
     cli.cpp                               \
+    cli_server.cpp                        \
     cli_uart.cpp                          \
     $(NULL)
 
@@ -32,6 +33,7 @@ libopenvc_cli_a_SOURCES                 = \
 
 noinst_HEADERS                          = \
     cli.hpp                               \
+    cli_config.h                          \
     cli_server.hpp                        \
     cli_uart.hpp                          \
     $(NULL)

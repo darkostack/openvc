@@ -13,6 +13,8 @@ extern "C" {
 
 typedef struct vcInstance vcInstance;
 
+vcInstance *vcInstanceInit(void *aInstanceBuffer, size_t *aInstanceBufferSize);
+
 vcInstance *vcInstanceInitSingle(void);
 
 bool vcInstanceIsInitialized(vcInstance *aInstance);
@@ -20,10 +22,6 @@ bool vcInstanceIsInitialized(vcInstance *aInstance);
 void vcInstanceFinalize(vcInstance *aInstance);
 
 void vcInstanceReset(vcInstance *aInstance);
-
-vcLogLevel vcGetDynamicLogLevel(vcInstance *aInstance);
-
-vcError vcSetDynamicLogLevel(vcInstance *aInstance, vcLogLevel aLogLevel);
 
 const char *vcGetVersionString(void);
 

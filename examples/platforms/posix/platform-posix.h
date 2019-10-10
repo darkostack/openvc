@@ -26,9 +26,12 @@
 
 #include "openvc-core-config.h"
 
-extern uint32_t NODE_ID;
+enum
+{
+    WELLKNOWN_NODE_ID = 34,
+};
 
-extern uint32_t WELLKNOWN_NODE_ID;
+extern uint32_t gNodeId;
 
 void platformAlarmInit(uint32_t aSpeedUpFactor);
 
@@ -36,7 +39,11 @@ void platformAlarmUpdateTimeout(struct timeval *aTimeout);
 
 void platformAlarmProcess(vcInstance *aInstance);
 
+int32_t platformAlarmGetNext(void);
+
 uint64_t platformAlarmGetNow(void);
+
+void platformAlarmAdvanceNow(uint64_t aDelta);
 
 void platformRandomInit(void);
 

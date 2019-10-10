@@ -10,24 +10,54 @@
 #include <openvc/platform/uart.h>
 
 #include "cli/cli.hpp"
-
 #include "common/code_utils.hpp"
 #include "common/encoding.hpp"
 #include "common/logging.hpp"
 #include "common/new.hpp"
 #include "common/tasklet.hpp"
+#include "utils/static_assert.hpp"
+#include "utils/wrap_string.h"
 
-#if OPENVC_CONFIG_ENABLE_DEBUG_UART
+#if OPENVC_CONFIG_DEBUG_UART_ENABLE
 #include <openvc/platform/debug_uart.h>
 #endif
 
+#ifdef VC_CLI_UART_LOCK_HDR_FILE
+
+#include VC_CLI_UART_LOCK_HDR_FILE
+
+#else
+
+/**
+ * Macro to acquire an exclusive lock of uart cli output
+ * Default implementation does nothing
+ *
+ */
+#ifndef VC_CLI_UART_OUTPUT_LOCK
+#define VC_CLI_UART_OUTPUT_LOCK() \
+    do                            \
+    {                             \
+    } while (0)
+#endif
+
+/**
+ * Macro to release the exclusive lock of uart cli output
+ * Default implementation does nothing
+ *
+ */
+#ifndef VC_CLI_UART_OUTPUT_UNLOCK
+#define VC_CLI_UART_OUTPUT_UNLOCK() \
+    do                              \
+    {                               \
+    } while (0)
+#endif
+
+#endif // VC_CLI_UART_LOCK_HDR_FILE
+
+VC_STATIC_ASSERT(OPENVC_CONFIG_CLI_MAX_LINE_LENGTH <= OPENVC_CONFIG_CLI_UART_RX_BUFFER_SIZE,
+                 "command line should be should be smaller than CLI rx buffer");
 namespace vc {
 namespace Cli {
-
-static const char sCommandPrompt[] = {'>', ' '};
-static const char sEraseString[]   = {'\b', ' ', '\b'};
-static const char CRNL[]           = {'\r', '\n'};
-Uart *            Uart::sUartServer;
 
 static vcDEFINE_ALIGNED_VAR(sCliUartRaw, sizeof(Uart), uint64_t);
 
@@ -35,34 +65,11 @@ extern "C" void vcCliUartInit(vcInstance *aInstance)
 {
     Instance *instance = static_cast<Instance *>(aInstance);
 
-    Uart::sUartServer = new (&sCliUartRaw) Uart(instance);
-}
-
-extern "C" void vcCliUartSetUserCommands(const vcCliCommand *aUserCommands, uint8_t aLength)
-{
-    Uart::sUartServer->GetInterpreter().SetUserCommands(aUserCommands, aLength);
-}
-
-extern "C" void vcCliUartOutputBytes(const uint8_t *aBytes, uint8_t aLength)
-{
-    Uart::sUartServer->GetInterpreter().OutputBytes(aBytes, aLength);
-}
-
-extern "C" void vcCliUartOutputFormat(const char *aFmt, ...)
-{
-    va_list aAp;
-    va_start(aAp, aFmt);
-    Uart::sUartServer->OutputFormatV(aFmt, aAp);
-    va_end(aAp);
-}
-
-extern "C" void vcCliUartAppendResult(vcError aError)
-{
-    Uart::sUartServer->GetInterpreter().AppendResult(aError);
+    Server::sServer = new (&sCliUartRaw) Uart(instance);
 }
 
 Uart::Uart(Instance *aInstance)
-    : mInterpreter(aInstance)
+    : Server(aInstance)
 {
     mRxLength   = 0;
     mTxHead     = 0;
@@ -74,12 +81,17 @@ Uart::Uart(Instance *aInstance)
 
 extern "C" void vcPlatUartReceived(const uint8_t *aBuf, uint16_t aBufLength)
 {
-    Uart::sUartServer->ReceiveTask(aBuf, aBufLength);
+    static_cast<Uart *>(Server::sServer)->ReceiveTask(aBuf, aBufLength);
 }
 
 void Uart::ReceiveTask(const uint8_t *aBuf, uint16_t aBufLength)
 {
-    const uint8_t *end;
+#if !OPENVC_CONFIG_UART_CLI_RAW
+    static const char sEraseString[] = {'\b', ' ', '\b'};
+    static const char CRNL[]         = {'\r', '\n'};
+#endif
+    static const char sCommandPrompt[] = {'>', ' '};
+    const uint8_t *   end;
 
     end = aBuf + aBufLength;
 
@@ -89,8 +101,9 @@ void Uart::ReceiveTask(const uint8_t *aBuf, uint16_t aBufLength)
         {
         case '\r':
         case '\n':
+#if !OPENVC_CONFIG_UART_CLI_RAW
             Output(CRNL, sizeof(CRNL));
-
+#endif
             if (mRxLength > 0)
             {
                 mRxBuffer[mRxLength] = '\0';
@@ -101,6 +114,7 @@ void Uart::ReceiveTask(const uint8_t *aBuf, uint16_t aBufLength)
 
             break;
 
+#if !OPENVC_CONFIG_UART_CLI_RAW
 #if OPENVC_POSIX
         case 0x04: // ASCII for Ctrl-D
             exit(EXIT_SUCCESS);
@@ -116,11 +130,14 @@ void Uart::ReceiveTask(const uint8_t *aBuf, uint16_t aBufLength)
             }
 
             break;
+#endif // !OPENVC_CONFIG_UART_CLI_RAW
 
         default:
-            if (mRxLength < kRxBufferSize)
+            if (mRxLength < kRxBufferSize - 1)
             {
+#if !OPENVC_CONFIG_UART_CLI_RAW
                 Output(reinterpret_cast<const char *>(aBuf), 1);
+#endif
                 mRxBuffer[mRxLength++] = static_cast<char>(*aBuf);
             }
 
@@ -133,21 +150,43 @@ vcError Uart::ProcessCommand(void)
 {
     vcError error = VC_ERROR_NONE;
 
-    if (mRxBuffer[mRxLength - 1] == '\n')
-    {
-        mRxBuffer[--mRxLength] = '\0';
-    }
-
-    if (mRxBuffer[mRxLength - 1] == '\r')
+    while (mRxBuffer[mRxLength - 1] == '\n' || mRxBuffer[mRxLength - 1] == '\r')
     {
         mRxBuffer[--mRxLength] = '\0';
     }
 
 #if OPENVC_CONFIG_LOG_OUTPUT != OPENVC_CONFIG_LOG_OUTPUT_NONE
-    vcLogInfoCli(Instance::Get(), "execute command: %s", mRxBuffer);
+        /*
+         * Note this is here for this reason:
+         *
+         * TEXT (command) input ... in a test automation script occurs
+         * rapidly and often without gaps between the command and the
+         * terminal CR
+         *
+         * In contrast as a human is typing there is a delay between the
+         * last character of a command and the terminal CR which executes
+         * a command.
+         *
+         * During that human induced delay a tasklet may be scheduled and
+         * the LOG becomes confusing and it is hard to determine when
+         * something happened.  Which happened first? the command-CR or
+         * the tasklet.
+         *
+         * Yes, while rare it is a race condition that is hard to debug.
+         *
+         * Thus this is here to affirmatively LOG exactly when the CLI
+         * command is being executed.
+         */
+#if OPENVC_CONFIG_MULTIPLE_INSTANCE_ENABLE
+        /* TODO: how exactly do we get the instance here? */
+#else
+    vcLogInfoCli("execute command: %s", mRxBuffer);
 #endif
-
-    mInterpreter.ProcessLine(mRxBuffer, mRxLength, *this);
+#endif
+    if (mRxLength > 0)
+    {
+        mInterpreter.ProcessLine(mRxBuffer, mRxLength, *this);
+    }
 
     mRxLength = 0;
 
@@ -156,45 +195,53 @@ vcError Uart::ProcessCommand(void)
 
 int Uart::Output(const char *aBuf, uint16_t aBufLength)
 {
-    uint16_t remaining = kTxBufferSize - mTxLength;
-    uint16_t tail;
+    VC_CLI_UART_OUTPUT_LOCK();
+    uint16_t sent = 0;
 
-    if (aBufLength > remaining)
+    while (aBufLength > 0)
     {
-        aBufLength = remaining;
+        uint16_t remaining = kTxBufferSize - mTxLength;
+        uint16_t tail;
+        uint16_t sendLength = aBufLength;
+
+        if (sendLength > remaining)
+        {
+            sendLength = remaining;
+        }
+
+        for (uint16_t i = 0; i < sendLength; i++)
+        {
+            tail            = (mTxHead + mTxLength) % kTxBufferSize;
+            mTxBuffer[tail] = *aBuf++;
+            aBufLength--;
+            mTxLength++;
+        }
+
+        Send();
+
+        sent += sendLength;
+
+        if (aBufLength > 0)
+        {
+            // More to send, so flush what's waiting now
+            vcError err = vcPlatUartFlush();
+
+            if (err == VC_ERROR_NONE)
+            {
+                // Flush successful, reset the pointers
+                SendDoneTask();
+            }
+            else
+            {
+                // Flush did not succeed, so abort here.
+                break;
+            }
+        }
     }
 
-    for (int i = 0; i < aBufLength; i++)
-    {
-        tail            = (mTxHead + mTxLength) % kTxBufferSize;
-        mTxBuffer[tail] = *aBuf++;
-        mTxLength++;
-    }
+    VC_CLI_UART_OUTPUT_UNLOCK();
 
-    Send();
-
-    return aBufLength;
-}
-
-int Uart::OutputFormat(const char *fmt, ...)
-{
-    char    buf[kMaxLineLength];
-    va_list ap;
-
-    va_start(ap, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, ap);
-    va_end(ap);
-
-    return Output(buf, static_cast<uint16_t>(strlen(buf)));
-}
-
-int Uart::OutputFormatV(const char *aFmt, va_list aAp)
-{
-    char buf[kMaxLineLength];
-
-    vsnprintf(buf, sizeof(buf), aFmt, aAp);
-
-    return Output(buf, static_cast<uint16_t>(strlen(buf)));
+    return sent;
 }
 
 void Uart::Send(void)
@@ -212,7 +259,7 @@ void Uart::Send(void)
 
     if (mSendLength > 0)
     {
-#if OPENVC_CONFIG_ENABLE_DEBUG_UART
+#if OPENTHREAD_CONFIG_ENABLE_DEBUG_UART
         /* duplicate the output to the debug uart */
         vcPlatDebugUart_write_bytes(reinterpret_cast<uint8_t *>(mTxBuffer + mTxHead), mSendLength);
 #endif
@@ -225,7 +272,7 @@ exit:
 
 extern "C" void vcPlatUartSendDone(void)
 {
-    Uart::sUartServer->SendDoneTask();
+    static_cast<Uart *>(Server::sServer)->SendDoneTask();
 }
 
 void Uart::SendDoneTask(void)
@@ -235,20 +282,6 @@ void Uart::SendDoneTask(void)
     mSendLength = 0;
 
     Send();
-}
-
-extern "C" void vcCliPlatLogv(vcLogLevel aLogLevel, vcLogRegion aLogRegion, const char *aFormat, va_list aArgs)
-{
-    VerifyOrExit(Uart::sUartServer != NULL);
-
-    Uart::sUartServer->OutputFormatV(aFormat, aArgs);
-    Uart::sUartServer->OutputFormat("\r\n");
-
-    VC_UNUSED_VARIABLE(aLogLevel);
-    VC_UNUSED_VARIABLE(aLogRegion);
-
-exit:
-    return;
 }
 
 } // namespace Cli

@@ -11,7 +11,7 @@ static uint32_t sState = 1;
 
 void platformRandomInit(void)
 {
-    sState = (uint32_t)time(NULL) + (3600 * NODE_ID);
+    sState = (uint32_t)time(NULL) + (3600 * gNodeId);
 }
 
 uint32_t vcPlatRandomGet(void)

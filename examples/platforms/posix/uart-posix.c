@@ -15,6 +15,14 @@
 
 #include "utils/code_utils.h"
 
+#ifdef OPENVC_TARGET_LINUX
+#include <sys/prctl.h>
+int   posix_openpt(int oflag);
+int   grantpt(int fildes);
+int   unlockpt(int fd);
+char *ptsname(int fd);
+#endif // OPENVC_TARGET_LINUX
+
 static uint8_t        s_receive_buffer[128];
 static const uint8_t *s_write_buffer;
 static uint16_t       s_write_length;
@@ -45,6 +53,12 @@ vcError vcPlatUartEnable(void)
 {
     vcError        error = VC_ERROR_NONE;
     struct termios termios;
+
+#ifdef OPENTHREAD_TARGET_LINUX
+    // Ensure we terminate this process if the
+    // parent process dies.
+    prctl(PR_SET_PDEATHSIG, SIGHUP);
+#endif
 
     s_in_fd  = dup(STDIN_FILENO);
     s_out_fd = dup(STDOUT_FILENO);
@@ -177,6 +191,33 @@ void platformUartUpdateFdSet(fd_set *aReadFdSet, fd_set *aWriteFdSet, fd_set *aE
     }
 }
 
+vcError vcPlatUartFlush(void)
+{
+    vcError error = VC_ERROR_NONE;
+    ssize_t count;
+
+    vcEXPECT_ACTION(s_write_buffer != NULL && s_write_length > 0, error = VC_ERROR_INVALID_STATE);
+
+    while ((count = write(s_out_fd, s_write_buffer, s_write_length)) > 0 && (s_write_length -= count) > 0)
+    {
+        s_write_buffer += count;
+    }
+
+    if (count != -1)
+    {
+        assert(s_write_length == 0);
+        s_write_buffer = NULL;
+    }
+    else
+    {
+        perror("write(UART)");
+        exit(EXIT_FAILURE);
+    }
+
+exit:
+    return error;
+}
+
 void platformUartProcess(void)
 {
     ssize_t       rval;
@@ -227,25 +268,26 @@ void platformUartProcess(void)
         {
             rval = write(s_out_fd, s_write_buffer, s_write_length);
 
-            if (rval <= 0)
+            if (rval >= 0)
+            {
+                s_write_buffer += (uint16_t)rval;
+                s_write_length -= (uint16_t)rval;
+
+                if (s_write_length == 0)
+                {
+                    vcPlatUartSendDone();
+                }
+            }
+            else if (errno != EINTR)
             {
                 perror("write");
                 exit(EXIT_FAILURE);
-            }
-
-            s_write_buffer += (uint16_t)rval;
-            s_write_length -= (uint16_t)rval;
-
-            if (s_write_length == 0)
-            {
-                vcPlatUartSendDone();
             }
         }
     }
 }
 
-#if OPENVC_CONFIG_ENABLE_DEBUG_UART && (OPENVC_CONFIG_LOG_OUTPUT == OPENVC_CONFIG_LOG_OUTPUT_DEBUG_UART)
-
+#if OPENVC_CONFIG_DEBUG_UART_ENABLE && (OPENVC_CONFIG_LOG_OUTPUT == OPENVC_CONFIG_LOG_OUTPUT_DEBUG_UART)
 static FILE *posix_logfile;
 
 vcError vcPlatDebugUart_logfile(const char *aFilename)
@@ -286,5 +328,4 @@ int vcPlatDebugUart_getc(void)
     /* not supported */
     return -1;
 }
-
 #endif

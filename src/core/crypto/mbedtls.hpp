@@ -12,6 +12,8 @@ class MbedTls
 {
 public:
     MbedTls(void);
+
+    static vcError MapError(int aRval);
 };
 
 } // namespace Crypto

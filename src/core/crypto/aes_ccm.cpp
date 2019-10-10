@@ -6,10 +6,9 @@
 namespace vc {
 namespace Crypto {
 
-vcError AesCcm::SetKey(const uint8_t *aKey, uint16_t aKeyLength)
+void AesCcm::SetKey(const uint8_t *aKey, uint16_t aKeyLength)
 {
     mEcb.SetKey(aKey, 8 * aKeyLength);
-    return VC_ERROR_NONE;
 }
 
 vcError AesCcm::Init(uint32_t    aHeaderLength,

@@ -4,7 +4,7 @@
 #include "openvc-core-config.h"
 
 #include <stddef.h>
-#include "utils/wrap_stdint.h"
+#include <stdint.h>
 
 #include <openvc/platform/alarm-micro.h>
 #include <openvc/platform/alarm-milli.h>
@@ -12,6 +12,7 @@
 #include "common/debug.hpp"
 #include "common/locator.hpp"
 #include "common/tasklet.hpp"
+#include "common/time.hpp"
 
 namespace vc {
 
@@ -22,10 +23,7 @@ class Timer : public InstanceLocator, public OwnerLocator
     friend class TimerScheduler;
 
 public:
-    enum
-    {
-        kMaxDt = (1UL << 31) - 1,
-    };
+    static const uint32_t kMaxDelay = (Time::kMaxDuration >> 1);
 
     typedef void (*Handler)(Timer &aTimer);
 
@@ -38,18 +36,18 @@ public:
     {
     }
 
-    uint32_t GetFireTime(void) const { return mFireTime; }
+    Time GetFireTime(void) const { return mFireTime; }
 
     bool IsRunning(void) const { return (mNext != this); }
 
 protected:
-    bool DoesFireBefore(const Timer &aTimer, uint32_t aNow);
+    bool DoesFireBefore(const Timer &aTimer, Time aNow);
 
     void Fired(void) { mHandler(*this); }
 
-    Handler  mHandler;
-    uint32_t mFireTime;
-    Timer *  mNext;
+    Handler mHandler;
+    Time    mFireTime;
+    Timer * mNext;
 };
 
 class TimerMilli : public Timer
@@ -60,20 +58,28 @@ public:
     {
     }
 
-    void Start(uint32_t aDt) { StartAt(GetNow(), aDt); }
+    void Start(uint32_t aDelay);
 
-    void StartAt(uint32_t aT0, uint32_t aDt);
+    void StartAt(TimeMilli aStartTime, uint32_t aDelay);
 
     void Stop(void);
 
-    static uint32_t GetNow(void) { return vcPlatAlarmMilliGetNow(); }
+    static TimeMilli GetNow(void) { return TimeMilli(vcPlatAlarmMilliGetNow()); }
+};
 
-    static uint32_t SecToMsec(uint32_t aSeconds) { return aSeconds * 1000u; }
+class TimerMilliContext : public TimerMilli
+{
+public:
+    TimerMilliContext(Instance &aInstance, Handler aHandler, void *aContext)
+        : TimerMilli(aInstance, aHandler, aContext)
+        , mContext(aContext)
+    {
+    }
 
-    static uint32_t MsecToSec(uint32_t aMilliSeconds) { return aMilliSeconds / 1000u; }
+    void *GetContext(void) { return mContext; }
 
 private:
-    TimerMilliScheduler &GetTimerMilliScheduler(void) const;
+    void *mContext;
 };
 
 class TimerScheduler : public InstanceLocator
@@ -88,7 +94,7 @@ protected:
         uint32_t (*AlarmGetNow)(void);
     };
 
-    TimerScheduler(Instance &aInstance)
+    explicit TimerScheduler(Instance &aInstance)
         : InstanceLocator(aInstance)
         , mHead(NULL)
     {
@@ -102,15 +108,13 @@ protected:
 
     void SetAlarm(const AlarmApi &aAlarmApi);
 
-    static bool IsStrictlyBefore(uint32_t aTimeA, uint32_t aTimeB);
-
     Timer *mHead;
 };
 
 class TimerMilliScheduler : public TimerScheduler
 {
 public:
-    TimerMilliScheduler(Instance &aInstance)
+    explicit TimerMilliScheduler(Instance &aInstance)
         : TimerScheduler(aInstance)
     {
     }
@@ -125,7 +129,7 @@ private:
     static const AlarmApi sAlarmMilliApi;
 };
 
-#if OPENVC_CONFIG_ENABLE_PLATFORM_USEC_TIMER
+#if OPENVC_CONFIG_PLATFORM_USEC_TIMER_ENABLE
 class TimerMicroScheduler;
 
 class TimerMicro : public Timer
@@ -136,16 +140,13 @@ public:
     {
     }
 
-    void Start(uint32_t aDt) { StartAt(GetNow(), aDt); }
+    void Start(uint32_t aDelay);
 
-    void StartAt(uint32_t aT0, uint32_t aDt);
+    void StartAt(TimeMicro aT0, uint32_t aDelay);
 
     void Stop(void);
 
-    static uint32_t GetNow(void) { return vcPlatAlarmMicroGetNow(); }
-
-private:
-    TimerMicroScheduler &GetTimerMicroScheduler(void) const;
+    static TimeMicro GetNow(void) { return Time(vcPlatAlarmMicroGetNow()); }
 };
 
 class TimerMicroScheduler : public TimerScheduler
@@ -166,7 +167,7 @@ private:
     static const AlarmApi sAlarmMicroApi;
 };
 
-#endif // OPENVC_CONFIG_ENABLE_PLATFORM_USEC_TIMER
+#endif // OPENVC_CONFIG_PLATFORM_USEC_TIMER_ENABLE
 
 } // namespace vc
 

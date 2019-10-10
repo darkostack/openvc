@@ -8,32 +8,84 @@
 
 #include "openvc-system.h"
 
+#if OPENVC_EXAMPLES_POSIX
+#include <setjmp.h>
+#include <unistd.h>
+
+jmp_buf gResetJump;
+
+void __gcov_flush();
+#endif
+
+#if OPENVC_CONFIG_MULTIPLE_INSTANCES_ENABLE
+void *vcPlatCAlloc(size_t aNum, size_t aSize)
+{
+    return calloc(aNum, aSize);
+}
+
+void vcPlatFree(void *aPtr)
+{
+    free(aPtr);
+}
+#endif
+
 void vcTaskletsSignalPending(vcInstance *aInstance)
 {
-    (void)aInstance;
+    VC_UNUSED_VARIABLE(aInstance);
 }
 
 int main(int argc, char *argv[])
 {
-    vcInstance *sInstance;
+    vcInstance *instance;
+
+#if OPENVC_EXAMPLES_POSIX
+    if (setjmp(gResetJump))
+    {
+        alarm(0);
+#ifdef OPENVC_ENABLE_COVERAGE
+        __gcov_flush();
+#endif
+        execvp(argv[0], argv);
+    }
+#endif
+
+#if OPENVC_CONFIG_MULTIPLE_INSTANCES_ENABLE
+    size_t   vcInstanceBufferLength = 0;
+    uint8_t *vcInstanceBuffer       = NULL;
+#endif
 
 pseudo_reset:
 
     vcSysInit(argc, argv);
 
-    sInstance = vcInstanceInitSingle();
+#if OPENVC_CONFIG_MULTIPLE_INSTANCES_ENABLE
+    // Call to query the buffer size
+    (void)vcInstanceInit(NULL, &vcInstanceBufferLength);
 
-    assert(sInstance);
+    // Call to allocate the buffer
+    vcInstanceBuffer = (uint8_t *)malloc(vcInstanceBufferLength);
+    assert(vcInstanceBuffer);
 
-    vcCliUartInit(sInstance);
+    instance = vcInstanceInit(vcInstanceBuffer, &vcInstanceBufferLength);
+#else
+    instance = vcInstanceInitSingle();
+#endif
+
+    assert(instance);
+
+    vcCliUartInit(instance);
 
     while (!vcSysPseudoResetWasRequested())
     {
-        vcTaskletsProcess(sInstance);
-        vcSysProcessDrivers(sInstance);
+        vcTaskletsProcess(instance);
+        vcSysProcessDrivers(instance);
     }
 
-    vcInstanceFinalize(sInstance);
+    vcInstanceFinalize(instance);
+
+#if OPENVC_CONFIG_MULTIPLE_INSTANCES_ENABLE
+    free(vcInstanceBuffer);
+#endif
 
     goto pseudo_reset;
 

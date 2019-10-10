@@ -7,59 +7,42 @@
 #include "common/logging.hpp"
 #include "common/new.hpp"
 
+using namespace vc;
+
+#if OPENVC_CONFIG_MULTIPLE_INSTANCES_ENABLE
+vcInstance *vcInstanceInit(void *aInstanceBuffer, size_t *aInstanceBufferSize)
+{
+    Instance *instance;
+
+    instance = Instance::Init(aInstanceBuffer, aInstanceBufferSize);
+    vcLogInfoApi("vcInstance Initialized");
+
+    return instance;
+}
+#else
 vcInstance *vcInstanceInitSingle(void)
 {
-    return &vc::Instance::InitSingle();
+    return &Instance::InitSingle();
 }
+#endif
 
 bool vcInstanceIsInitialized(vcInstance *aInstance)
 {
-    vc::Instance &instance = *static_cast<vc::Instance *>(aInstance);
+    Instance &instance = *static_cast<Instance *>(aInstance);
 
     return instance.IsInitialized();
 }
 
 void vcInstanceFinalize(vcInstance *aInstance)
 {
-    vc::Instance &instance = *static_cast<vc::Instance *>(aInstance);
+    Instance &instance = *static_cast<Instance *>(aInstance);
     instance.Finalize();
 }
 
 void vcInstanceReset(vcInstance *aInstance)
 {
-    vc::Instance &instance = *static_cast<vc::Instance *>(aInstance);
+    Instance &instance = *static_cast<Instance *>(aInstance);
     instance.Reset();
-}
-
-vcLogLevel vcGetDynamicLogLevel(vcInstance *aInstance)
-{
-    vcLogLevel logLevel;
-
-#if OPENVC_CONFIG_ENABLE_DYNAMIC_LOG_LEVEL
-    vc::Instance &instance = *static_cast<vc::Instance *>(aInstance);
-    logLevel = instance.GetDynamicLogLevel();
-#else
-    logLevel = static_cast<vcLogLevel>(OPENVC_CONFIG_LOG_LEVEL);
-    VC_UNUSED_VARIABLE(aInstance);
-#endif
-
-    return logLevel;
-}
-
-vcError vcSetDynamicLogLevel(vcInstance *aInstance, vcLogLevel aLogLevel)
-{
-    vcError error = VC_ERROR_NONE;
-
-#if OPENVC_CONFIG_ENABLE_DYNAMIC_LOG_LEVEL
-    vc::Instance &instance = *static_cast<vc::Instance *>(aInstance);
-    instance.SetDynamicLogLevel(aLogLevel);
-#else
-    error = VC_ERROR_DISABLED_FEATURE;
-    VC_UNUSED_VARIABLE(aInstance);
-    VC_UNUSED_VARIABLE(aLogLevel);
-#endif
-
-    return error;
 }
 
 const char *vcGetVersionString(void)

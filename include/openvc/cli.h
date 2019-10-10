@@ -21,13 +21,15 @@ typedef int (*vcCliCommandOuputCallback)(const char *aBuf, uint16_t aBufLength, 
 
 void vcCliUartInit(vcInstance *aInstance);
 
-void vcCliUartSetUserCommands(const vcCliCommand *aUserCommands, uint8_t aLength);
+void vcCliSetUserCommands(const vcCliCommand *aUserCommands, uint8_t aLength);
 
-void vcCliUartOutputBytes(const uint8_t *aBytes, uint8_t aLength);
+void vcCliOutputBytes(const uint8_t *aBytes, uint8_t aLength);
 
-void vcCliUartOutputFormat(const char *aFmt, ...);
+void vcCliOutputFormat(const char *aFmt, ...);
 
-void vcCliUartAppendResult(vcError aError);
+void vcCliOutput(const char *aString, uint16_t aLength);
+
+void vcCliAppendResult(vcError aError);
 
 void vcCliPlatLogv(vcLogLevel aLogLevel, vcLogRegion aLogRegion, const char *aFormat, va_list aArgs);
 

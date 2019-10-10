@@ -4,7 +4,7 @@
 #include "openvc-core-config.h"
 
 #include <limits.h>
-#include "utils/wrap_stdint.h"
+#include <stdint.h>
 
 namespace vc {
 namespace Encoding {

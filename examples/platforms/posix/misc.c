@@ -1,13 +1,13 @@
 #include "platform-posix.h"
 
+#include <setjmp.h>
 #include <unistd.h>
 
 #include <openvc/platform/misc.h>
 
 #include "openvc-system.h"
 
-extern int    gArgumentsCount;
-extern char **gArguments;
+extern jmp_buf gResetJump;
 
 static vcPlatResetReason   sPlatResetReason = VC_PLAT_RESET_REASON_POWER_ON;
 bool                       gPlatformPseudoResetWasRequested;
@@ -15,31 +15,18 @@ static vcPlatMcuPowerState gPlatMcuPowerState = VC_PLAT_MCU_POWER_STATE_ON;
 
 void vcPlatReset(vcInstance *aInstance)
 {
+    VC_UNUSED_VARIABLE(aInstance);
+
 #if OPENVC_PLATFORM_USE_PSEUDO_RESET
     gPlatformPseudoResetWasRequested = true;
     sPlatResetReason                 = VC_PLAT_RESET_REASON_SOFTWARE;
 #else
-
-    char *argv[gArgumentsCount + 1];
-
-    for (int i = 0; i < gArgumentsCount; ++i)
-    {
-        argv[i] = gArguments[i];
-    }
-
-    argv[gArgumentsCount] = NULL;
-
     vcSysDeInit();
     platformUartRestore();
 
-    alarm(0);
-
-    execvp(argv[0], argv);
-    perror("reset failed");
-    exit(EXIT_FAILURE);
+    longjmp(gResetJump, 1);
+    assert(false);
 #endif
-
-    VC_UNUSED_VARIABLE(aInstance);
 }
 
 vcPlatResetReason vcPlatGetResetReason(vcInstance *aInstance)

@@ -3,7 +3,9 @@
 
 #include "openvc-core-config.h"
 
-#include "utils/wrap_stdbool.h"
+#include <stdbool.h>
+
+#include "utils/static_assert.hpp"
 
 #define VC_ARRAY_LENGTH(aArray) (sizeof(aArray) / sizeof(aArray[0]))
 

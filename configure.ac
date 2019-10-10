@@ -282,6 +282,9 @@ fi
 AM_CONDITIONAL([OPENVC_BUILD_COVERAGE], [test "${nl_cv_build_coverage}" = "yes"])
 AM_CONDITIONAL([OPENVC_BUILD_COVERAGE_REPORTS], [test "${nl_cv_build_coverage_reports}" = "yes"])
 
+AC_SUBST(OPENVC_ENABLE_COVERAGE)
+AM_CONDITIONAL([OPENVC_ENABLE_COVERAGE], [test "${nl_cv_build_coverage}" = "yes"])
+
 # Optimization
 
 NL_ENABLE_OPTIMIZATION([yes])
@@ -425,8 +428,9 @@ AC_ARG_ENABLE(cli-app,
 
 AC_MSG_CHECKING([cli-app modes])
 AC_MSG_RESULT(${enable_cli_app})
-AM_CONDITIONAL([OPENVC_ENABLE_CLI], [test "${enable_cli_app}" == "yes"])
+
 AC_SUBST(OPENVC_ENABLE_CLI)
+AM_CONDITIONAL([OPENVC_ENABLE_CLI], [test "${enable_cli_app}" == "yes"])
 
 #
 # Checks for libraries and packages.

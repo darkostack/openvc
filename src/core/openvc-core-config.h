@@ -9,7 +9,10 @@
 #include OPENVC_PROJECT_CORE_CONFIG_FILE
 #endif
 
-#include "openvc-core-default-config.h"
+#include "config/openvc-core-default-config.h"
+
+#include "config/logging.h"
+#include "config/platform.h"
 
 #undef OPENVC_CORE_CONFIG_H_IN
 

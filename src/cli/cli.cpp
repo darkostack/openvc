@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "utils/parse_cmdline.hpp"
 #include "utils/wrap_string.h"
 
 #include "cli_uart.hpp"
@@ -18,33 +19,6 @@ const struct Command Interpreter::sCommands[] = {
     {"help", &Interpreter::ProcessHelp},
     {"version", &Interpreter::ProcessVersion},
 };
-
-void vcFreeMemory(const void *)
-{
-}
-
-template <class T> class vcPtr
-{
-    T *ptr;
-
-public:
-    vcPtr(T *_ptr)
-        : ptr(_ptr)
-    {
-    }
-    ~vcPtr()
-    {
-        if (ptr)
-        {
-            vcFreeMemory(ptr);
-        }
-    }
-    T *get() const { return ptr; }
-       operator T *() const { return ptr; }
-    T *operator->() const { return ptr; }
-};
-
-typedef vcPtr<const char> vcStringPtr;
 
 Interpreter::Interpreter(Instance *aInstance)
     : mUserCommands(NULL)
@@ -142,6 +116,9 @@ vcError Interpreter::ParseUnsignedLong(char *aString, unsigned long &aUnsignedLo
 
 void Interpreter::ProcessHelp(int argc, char *argv[])
 {
+    VC_UNUSED_VARIABLE(argc);
+    VC_UNUSED_VARIABLE(argv);
+
     for (unsigned int i = 0; i < VC_ARRAY_LENGTH(sCommands); i++)
     {
         mServer->OutputFormat("%s\r\n", sCommands[i].mName);
@@ -151,18 +128,16 @@ void Interpreter::ProcessHelp(int argc, char *argv[])
     {
         mServer->OutputFormat("%s\r\n", mUserCommands[i].mName);
     }
-
-    VC_UNUSED_VARIABLE(argc);
-    VC_UNUSED_VARIABLE(argv);
 }
 
 void Interpreter::ProcessVersion(int argc, char *argv[])
 {
-    vcStringPtr version(vcGetVersionString());
-    mServer->OutputFormat("%s\r\n", (const char *)version);
-    AppendResult(VC_ERROR_NONE);
     VC_UNUSED_VARIABLE(argc);
     VC_UNUSED_VARIABLE(argv);
+
+    const char *version = vcGetVersionString();
+    mServer->OutputFormat("%s\r\n", (const char *)version);
+    AppendResult(VC_ERROR_NONE);
 }
 
 void Interpreter::ProcessLine(char *aBuf, uint16_t aBufLength, Server &aServer)
@@ -173,33 +148,19 @@ void Interpreter::ProcessLine(char *aBuf, uint16_t aBufLength, Server &aServer)
 
     mServer = &aServer;
 
-    VerifyOrExit(aBuf != NULL);
+    VerifyOrExit(aBuf != NULL && strnlen(aBuf, aBufLength + 1) <= aBufLength);
 
-    for (; *aBuf == ' '; aBuf++, aBufLength--)
-        ;
+    VerifyOrExit(Utils::CmdLineParser::ParseCmd(aBuf, argc, argv, kMaxArgs) == VC_ERROR_NONE,
+                 mServer->OutputFormat("Error: too many args (max %d)\r\n", kMaxArgs));
+    VerifyOrExit(argc >= 1, mServer->OutputFormat("Error: no given command.\r\n"));
 
-    for (cmd = aBuf + 1; (cmd < aBuf + aBufLength) && (cmd != NULL); ++cmd)
-    {
-        VerifyOrExit(argc < kMaxArgs, mServer->OutputFormat("Error: too many args (max %d)\r\n", kMaxArgs));
-
-        if (*cmd == ' ' || *cmd == '\r' || *cmd == '\n')
-        {
-            *cmd = '\0';
-        }
-
-        if (*(cmd - 1) == '\0' && *cmd != ' ')
-        {
-            argv[argc++] = cmd;
-        }
-    }
-
-    cmd = aBuf;
+    cmd = argv[0];
 
     for (i = 0; i < VC_ARRAY_LENGTH(sCommands); i++)
     {
         if (strcmp(cmd, sCommands[i].mName) == 0)
         {
-            (this->*sCommands[i].mCommand)(argc, argv);
+            (this->*sCommands[i].mCommand)(argc - 1, &argv[1]);
             break;
         }
     }
@@ -212,7 +173,7 @@ void Interpreter::ProcessLine(char *aBuf, uint16_t aBufLength, Server &aServer)
         {
             if (strcmp(cmd, mUserCommands[i].mName) == 0)
             {
-                mUserCommands[i].mCommand(argc, argv);
+                mUserCommands[i].mCommand(argc - 1, &argv[1]);
                 break;
             }
         }
@@ -235,9 +196,56 @@ void Interpreter::SetUserCommands(const vcCliCommand *aCommands, uint8_t aLength
 
 Interpreter &Interpreter::GetOwner(OwnerLocator &aOwnerLocator)
 {
+#if OPENVC_CONFIG_MULTIPLE_INSTANCES_ENABLE
     Interpreter &interpreter = Uart::sUartServer->GetInterpreter();
+#else
     VC_UNUSED_VARIABLE(aOwnerLocator);
+
+    Interpreter &interpreter = Server::sServer->GetInterpreter();
+#endif
     return interpreter;
+}
+
+extern "C" void vcCliSetUserCommands(const vcCliCommand *aUserCommands, uint8_t aLength)
+{
+    Server::sServer->GetInterpreter().SetUserCommands(aUserCommands, aLength);
+}
+
+extern "C" void vcCliOutputBytes(const uint8_t *aBytes, uint8_t aLength)
+{
+    Server::sServer->GetInterpreter().OutputBytes(aBytes, aLength);
+}
+
+extern "C" void vcCliOutputFormat(const char *aFmt, ...)
+{
+    va_list aAp;
+    va_start(aAp, aFmt);
+    Server::sServer->OutputFormatV(aFmt, aAp);
+    va_end(aAp);
+}
+
+extern "C" void vcCliOutput(const char *aString, uint16_t aLength)
+{
+    Server::sServer->Output(aString, aLength);
+}
+
+extern "C" void vcCliAppendResult(vcError aError)
+{
+    Server::sServer->GetInterpreter().AppendResult(aError);
+}
+
+extern "C" void vcCliPlatLogv(vcLogLevel aLogLevel, vcLogRegion aLogRegion, const char *aFormat, va_list aArgs)
+{
+    VC_UNUSED_VARIABLE(aLogLevel);
+    VC_UNUSED_VARIABLE(aLogRegion);
+
+    VerifyOrExit(Server::sServer != NULL);
+
+    Server::sServer->OutputFormatV(aFormat, aArgs);
+    Server::sServer->OutputFormat("\r\n");
+
+exit:
+    return;
 }
 
 } // namespace Cli
