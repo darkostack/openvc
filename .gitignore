@@ -1,6 +1,7 @@
 *.a
 *.bak
 *.db
+*.flash
 *.gcda
 *.gcno
 *.log
@@ -13,6 +14,7 @@
 *.suo
 *.trs
 *.user
+*.bak
 *~
 .deps
 .dirstamp
@@ -28,14 +30,24 @@ config.log
 config.status
 doc/Doxyfile
 doc/html
+etc/visual-studio/BundleArtifacts
+etc/visual-studio/Generated Files
 include/openvc-config.h
 include/openvc-config.h.in
 include/openvc-config-generic.h
 include/openvc-config-generic.h.in
 include/stamp-h1
-iphc
+ipch
 libtool
 Makefile
 Makefile.in
 output
-third_party/nlbuild-autotools/repo/third_party/autoconf/
+third_party/nlbuild-autotools/repo/third_party/autoconf/compile
+third_party/nlbuild-autotools/repo/third_party/autoconf/depcomp
+third_party/nlbuild-autotools/repo/third_party/autoconf/ltmain.sh
+third_party/nlbuild-autotools/repo/third_party/autoconf/m4/libtool.m4
+third_party/nlbuild-autotools/repo/third_party/autoconf/m4/ltoptions.m4
+third_party/nlbuild-autotools/repo/third_party/autoconf/m4/ltsugar.m4
+third_party/nlbuild-autotools/repo/third_party/autoconf/m4/ltversion.m4
+third_party/nlbuild-autotools/repo/third_party/autoconf/m4/lt~obsolete.m4
+third_party/nlbuild-autotools/repo/third_party/autoconf/missing
