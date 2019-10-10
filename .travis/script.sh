@@ -17,7 +17,7 @@ set -x
     ./bootstrap || die
 
     scan-build ./configure              \
-        --enable-cli-app=yes            \
+        --enable-cli-app=no             \
         --with-examples=posix || die
     scan-build --status-bugs -analyze-headers -v make || die
 }
@@ -41,7 +41,7 @@ set -x
     ./bootstrap || die
 
     ./configure                         \
-        --enable-cli-app=yes            \
+        --enable-cli-app=no             \
         --with-examples=posix           \
         --enable-build-coverage=yes || die
 
