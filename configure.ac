@@ -519,7 +519,7 @@ include/Makefile
 include/openvc/Makefile
 include/openvc/platform/Makefile
 src/Makefile
-src/cli/makefile
+src/cli/Makefile
 src/core/Makefile
 third_party/Makefile
 third_party/mbedtls/Makefile
