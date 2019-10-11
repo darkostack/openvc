@@ -17,6 +17,7 @@ set -x
     ./bootstrap || die
 
     scan-build ./configure              \
+        --enable-builtin-mbedtls=no     \
         --enable-cli-app=yes            \
         --with-examples=posix || die
     scan-build --status-bugs -analyze-headers -v make || die
