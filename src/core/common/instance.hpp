@@ -9,7 +9,9 @@
 #include <openvc/error.h>
 #include <openvc/platform/logging.h>
 
+#if OPENVC_CONFIG_BUILTIN_MBEDTLS_ENABLE
 #include "crypto/mbedtls.hpp"
+#endif
 #include "utils/heap.hpp"
 
 #include "common/code_utils.hpp"
@@ -76,7 +78,9 @@ private:
 #if !OPENVC_CONFIG_MULTIPLE_INSTANCES_ENABLE
     Utils::Heap mHeap;
 #endif
+#if OPENVC_CONFIG_BUILTIN_MBEDTLS_ENABLE
     Crypto::MbedTls mMbedTls;
+#endif
 
 #if OPENVC_CONFIG_DYNAMIC_LOG_LEVEL_ENABLE
     vcLogLevel mLogLevel;
