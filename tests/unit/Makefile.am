@@ -36,9 +36,14 @@ endif # OPENVC_ENABLE_BUILTIN_MBEDTLS
 
 check_PROGRAMS                                                      = \
     test-heap                                                         \
-    test-aes                                                          \
     test-timer                                                        \
     $(NULL)
+
+if OPENVC_ENABLE_BUILTIN_MBEDTLS
+check_PROGRAMS                                                     += \
+    test-aes                                                          \
+    $(NULL)
+endif # OPENVC_ENABLE_BUILTIN_MBEDTLS
 
 # Test applications and scripts that should be built and run when the
 # 'check' target is run.
@@ -52,17 +57,24 @@ TESTS                                                               = \
 test_heap_LDADD             = $(COMMON_LDADD)
 test_heap_SOURCES           = test_platform.cpp test_heap.cpp
 
+if OPENVC_ENABLE_BUILTIN_MBEDTLS
 test_aes_LDADD              = $(COMMON_LDADD)
 test_aes_SOURCES            = test_platform.cpp test_aes.cpp
+endif # OPENVC_ENABLE_BUILTIN_MBEDTLS
 
 test_timer_LDADD            = $(COMMON_LDADD)
 test_timer_SOURCES          = test_platform.cpp test_timer.cpp
 
 PRETTY_FILES                                                        = \
     $(test_heap_SOURCES)                                              \
-    $(test_aes_SOURCES)                                               \
     $(test_timer_SOURCES)                                             \
     $(NULL)
+
+if OPENVC_ENABLE_BUILTIN_MBEDTLS
+PRETTY_FILES                                                       += \
+    $(test_aes_SOURCES)                                               \
+    $(NULL)
+endif # OPENVC_ENABLE_BUILTIN_MBEDTLS
 
 if OPENVC_BUILD_COVERAGE
 CLEANFILES                   = $(wildcard *.gcda *.gcno)

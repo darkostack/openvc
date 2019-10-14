@@ -38,6 +38,7 @@ vcError MbedTls::MapError(int aRval)
 {
     vcError error = VC_ERROR_NONE;
 
+#if OPENVC_CONFIG_BUILTIN_MBEDTLS_ENABLE
     switch (aRval)
     {
     case MBEDTLS_ERR_SSL_BAD_INPUT_DATA:
@@ -71,6 +72,7 @@ vcError MbedTls::MapError(int aRval)
         assert(aRval >= 0);
         break;
     }
+#endif
 
     return error;
 }

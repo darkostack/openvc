@@ -5,7 +5,9 @@
 
 #include <stdint.h>
 
+#if OPENVC_CONFIG_BUILTIN_MBEDTLS_ENABLE
 #include <mbedtls/md.h>
+#endif
 
 namespace vc {
 namespace Crypto {
@@ -29,7 +31,9 @@ public:
     void Finish(uint8_t aHash[kHashSize]);
 
 private:
+#if OPENVC_CONFIG_BUILTIN_MBEDTLS_ENABLE
     mbedtls_md_context_t mContext;
+#endif
 };
 
 } // namespace Crypto

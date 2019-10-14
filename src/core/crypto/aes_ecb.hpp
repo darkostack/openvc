@@ -3,7 +3,9 @@
 
 #include "openvc-core-config.h"
 
+#if OPENVC_CONFIG_BUILTIN_MBEDTLS_ENABLE
 #include <mbedtls/aes.h>
+#endif
 
 namespace vc {
 namespace Crypto {

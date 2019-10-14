@@ -11,7 +11,7 @@
 namespace vc {
 namespace Crypto {
 
-#if OPENVC_CONFIG_ECDSA_ENABLE
+#if OPENVC_CONFIG_ECDSA_ENABLE && OPENVC_CONFIG_BUILTIN_MBEDTLS_ENABLE
 
 vcError Ecdsa::Sign(uint8_t *      aOutput,
                     uint16_t *     aOutputLength,
@@ -65,7 +65,7 @@ exit:
     return error;
 }
 
-#endif // OPENVC_CONFIG_ECDSA_ENABLE
+#endif // OPENVC_CONFIG_ECDSA_ENABLE && OPENVC_CONFIG_BUILTIN_MBEDTLS_ENABLE
 
 } // namespace Crypto
 } // namespace vc
