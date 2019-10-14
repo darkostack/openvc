@@ -3,9 +3,7 @@
 
 #include "openvc-core-config.h"
 
-#if OPENVC_CONFIG_BUILTIN_MBEDTLS_ENABLE
 #include <mbedtls/aes.h>
-#endif
 
 namespace vc {
 namespace Crypto {
@@ -27,9 +25,7 @@ public:
     void Encrypt(const uint8_t aInput[kBlockSize], uint8_t aOutput[kBlockSize]);
 
 private:
-#if OPENVC_CONFIG_BUILTIN_MBEDTLS_ENABLE
     mbedtls_aes_context mContext;
-#endif
 };
 
 } // namespace Crypto

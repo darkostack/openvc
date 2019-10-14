@@ -21,18 +21,23 @@ SOURCE_COMMON                       = \
     common/string.cpp                 \
     common/tasklet.cpp                \
     common/timer.cpp                  \
-    crypto/aes_ccm.cpp                \
-    crypto/aes_ecb.cpp                \
-    crypto/ecdsa.cpp                  \
-    crypto/hmac_sha256.cpp            \
-    crypto/mbedtls.cpp                \
-    crypto/sha256.cpp                 \
     utils/heap.cpp                    \
     utils/missing_strlcat.c           \
     utils/missing_strlcpy.c           \
     utils/missing_strnlen.c           \
     utils/parse_cmdline.cpp           \
     $(NULL)
+
+if OPENVC_ENABLE_BUILTIN_MBEDTLS
+SOURCE_COMMON                      += \
+    crypto/aes_ccm.cpp                \
+    crypto/aes_ecb.cpp                \
+    crypto/ecdsa.cpp                  \
+    crypto/hmac_sha256.cpp            \
+    crypto/mbedtls.cpp                \
+    crypto/sha256.cpp                 \
+    $(NULL)
+endif
 
 libopenvc_core_a_SOURCES            = \
     $(SOURCE_COMMON)                  \
@@ -53,17 +58,22 @@ HEADERS_COMMON                      = \
     common/tasklet.hpp                \
     common/time.hpp                   \
     common/timer.hpp                  \
+    utils/heap.hpp                    \
+    utils/parse_cmdline.hpp           \
+    utils/static_assert.hpp           \
+    utils/wrap_string.h               \
+    $(NULL)
+
+if OPENVC_ENABLE_BUILTIN_MBEDTLS
+HEADERS_COMMON                     += \
     crypto/aes_ccm.hpp                \
     crypto/aes_ecb.hpp                \
     crypto/ecdsa.hpp                  \
     crypto/hmac_sha256.hpp            \
     crypto/mbedtls.hpp                \
     crypto/sha256.hpp                 \
-    utils/heap.hpp                    \
-    utils/parse_cmdline.hpp           \
-    utils/static_assert.hpp           \
-    utils/wrap_string.h               \
     $(NULL)
+endif
 
 noinst_HEADERS                      = \
     $(HEADERS_COMMON)                 \
