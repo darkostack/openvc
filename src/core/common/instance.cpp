@@ -21,7 +21,9 @@ Instance::Instance(void)
 #if !OPENVC_CONFIG_MULTIPLE_INSTANCES_ENABLE
     , mHeap()
 #endif
+#if OPENVC_CONFIG_BUILTIN_MBEDTLS_ENABLE
     , mMbedTls()
+#endif
 #if OPENVC_CONFIG_DYNAMIC_LOG_LEVEL_ENABLE
     , mLogLevel(static_cast<vcLogLevel>(OPENVC_CONFIG_LOG_LEVEL))
 #endif
